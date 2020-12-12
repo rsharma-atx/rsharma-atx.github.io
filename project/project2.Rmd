@@ -1,0 +1,272 @@
+---
+title: "proj2finalfinal"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{R}
+library(fivethirtyeight)
+library(ggplot2)
+library(dplyr)
+data(candy_rankings)
+
+class_diag<-function(probs,truth){
+  
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE) truth<-as.numeric(truth)-1
+  
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),truth)
+  prediction<-ifelse(probs>.5,1,0)
+  acc=mean(truth==prediction)
+  sens=mean(prediction[truth==1]==1)
+  spec=mean(prediction[truth==0]==0)
+  ppv=mean(truth[prediction==1]==1)
+  f1=2*(sens*ppv)/(sens+ppv)
+  
+  #CALCULATE EXACT AUC
+  ord<-order(probs, decreasing=TRUE)
+  probs <- probs[ord]; truth <- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+  
+  data.frame(acc,sens,spec,ppv,auc)
+}
+
+```
+
+#I used a dataset describing different candy bars found that people get on Halloween.
+#This dataset describes each candy and then how it compares to others in terms of price and win percentage. 
+#The variables chocolate, fruity, caramel, peanutyalmondy, nougat, hard, and bar ask the question of whether or not those items are in the bar. 
+#Pluribus asks whether this candy is one of the many candies found in a bag or box, and sugarpercent tells us the sugar percentile of that candy. 
+#Pricepercent tells us the unit price percentile compared to the rest of the set--which ones were more expensive compared to others. 
+#Lastly, winpercent tells us the overall win percentage according to 269,000 matchups, which means it tells us how often that candy won compared to its competitors. 
+
+```{R}
+man1 <-manova(cbind(sugarpercent, pricepercent)~chocolate, data=candy_rankings)
+summary(man1)
+```
+
+#After running our MANOVA test on our dataset with the two variables of sugar percent and price percent, we get a p-value of less than 0.05 which means we can reject our null and say that for at least one of our dependent variables (sugarpercent and pricepercent), there is at least one chocolate mean that is different. 
+
+```{R}
+summary.aov(man1)
+
+pairwise.t.test(candy_rankings$sugarpercent, candy_rankings$chocolate, p.adj="none")
+pairwise.t.test(candy_rankings$pricepercent, candy_rankings$chocolate, p.adj="none")
+1-.95^5
+0.05/5
+```
+#In total we did 1 MANOVA, 2 ANOVAs, and 2 t-tests, for a grand total of 5 t-tests. 
+#Without adjustment of our significance level, the probability of making a Type-I error increases to 23% due to repeated testing.
+#To adjust for doing multiple tests and multiple comparisons, we will use the bonferroni correction by dividing our original significance level of 0.05 by 5 since we did 5 tests in total. 
+#So now our new significance level is 0.01.
+#With our new significance level we can see that there is a significant response from the price percent variable, meaning that the two groups, chocolate candy and non-chocolate candy, differs in mean  price percent. 
+#Then, looking at our t-test we did for price percent comparing the chocolate and non-chocolate group, we get a p-value<0.01 yielding a significant result that there is a difference in mean price percent for chocolate candy versus non-chocolate candy.
+
+```{R}
+library(rstatix)
+group <- candy_rankings$chocolate 
+DVs <- candy_rankings %>% select(sugarpercent,pricepercent)
+#Test multivariate normality for each group (null: assumption met)
+sapply(split(DVs,group), mshapiro_test)
+#here one of our p-values is less than 0.05 which means that assumptions are violated for MANOVA.
+
+
+
+candy_rankings%>%group_by(fruity)%>%summarize(means=mean(sugarpercent))%>%summarize(`mean_diff`=diff(means))
+```
+#This is our test statistic! Fruity candies, on average, are 0.019% sugar percentile less than that of non-fruity candies--meaning that fruity candies have about 1.9% less sugar than non-fruity candies. 
+
+```{R}
+rand_dist<-vector()
+for(i in 1:5000){
+  new<-data.frame(sugarpercent=sample(candy_rankings$sugarpercent),fruity=candy_rankings$fruity)
+  rand_dist[i]<-mean(new[new$fruity=="TRUE",]$sugarpercent)-
+    mean(new[new$fruity=="FALSE",]$sugarpercent)}
+
+mean(rand_dist>0.0194457 | rand_dist < -0.0194457)
+```
+
+#Our null hypothesis is that fruity and non-fruity candies have the same average sugar percentiles,
+#while our alternative hypothesis is that average sugar percentiles differ between fruity and non-fruity candies. 
+#After doing our randomization test and creating a two-tailed p-value, we see that our p-value is 0.749 which is greater than 0.05, which means we can reject our null hypothesis
+#and say that there is a difference in average sugar percentiles between fruity candies and non-fruity candies. 
+
+```{R}
+{hist(rand_dist,main="",ylab=""); abline(v = c(0.0194457,-0.0194457),col="pink")}
+
+
+candy_rankings$winperc_c <- candy_rankings$winpercent - mean(candy_rankings$winpercent)
+fit<-lm(sugarpercent ~ chocolate*winperc_c, data=candy_rankings)
+summary(fit)
+```
+#For candies that have an average win percentage and do not have chocolate, their predicted sugar percentile is 0.49. 
+#For candies that have an average win percentagea but do have chocolate, their predicted sugar percentile is 0.04 lower than those without chocolate. 
+#For every one unit increase in average win percentage, candies without chocolate go up 0.0048 in predicted sugar percentile.
+#The slope of average win percentile for candies with chocolate is 0.00078 greater than for those without chocolate. 
+```{R}
+ggplot(candy_rankings, aes(winperc_c, sugarpercent))+geom_smooth(method="lm")
+
+#Normality 
+resids<-lm(sugarpercent ~ chocolate*winperc_c, data=candy_rankings)$residuals
+ggplot()+geom_histogram(aes(resids),bins=10)
+#it looks pretty normal 
+
+#Homoskedasticity
+fitted<-lm(sugarpercent ~ chocolate*winperc_c, data=candy_rankings)$fitted.values
+ggplot()+geom_point(aes(fitted,resids))
+#and it looks homoskedastic because there is no fanning out and linear because nothing crazy going on.
+#it seems like all of our assumptions are met!!
+
+#original SEs
+summary(fit)$coef[,1:2]
+
+#robust SEs
+library(lmtest)
+library(sandwich)
+coeftest(fit, vcov=vcovHC(fit))[,1:2]
+#The standard errors are around the same for the datase before and after correcting. 
+summary(fit)
+```
+#For all my variablews, the p-value is greater than 0.05 yielding insignificant results on the effect of chocolate and win percentage on sugar percentile.
+#The interaction also yielded insignificant results on predicting sugar percentile for the candies. 
+#My model explains about 5.57% of the variation in sugar percentile, as seen by my adjusted r-squared value, but this is most likely due to chance.  
+```{R}
+#Bootstrap SEs
+bootstrap <- sample_frac(candy_rankings, replace=T)
+sample_boot <- replicate(5000, {
+  bootstrap <- sample_frac(candy_rankings, replace=T)
+  fit2 <- lm(sugarpercent ~ chocolate*winperc_c, data = bootstrap)
+  coef(fit2)
+})
+sample_boot %>% t %>% as.data.frame %>% summarize_all(sd) 
+```
+#Compared to the robust and original standard errors, the bootstrap standard errors are pretty similar to both. There was no significant change in standard errors for any of the variables across the three different types of SEs. 
+
+```{R}
+candy_rankings1 <- candy_rankings %>% mutate(y = ifelse(peanutyalmondy == "TRUE", 1, 0))
+
+log_fit <- glm(y~sugarpercent+winpercent, family="binomial", data=candy_rankings1)
+exp(coeftest(log_fit))
+```
+#If sugar percent and win percent are 0, the predicted odds of a candy having peanuts, peanut butter, or almonds is 0.0019.
+#When controlling for win percent, for every one-unit increase in sugar percent, the predicted odds of a candy having peanuts, peanut butter, or almonds increase by a factor of 1.119.
+#When controlling for sugar percent, for every one-unit increase in win percdent, the predicted odds of a candy having peanuts, peanut butter, or almonds increase by a factor of 1.085.
+
+```{R}
+candy_rankings1$probs <- predict(log_fit,type="response")
+candy_rankings1$predicted <- ifelse(candy_rankings1$probs>.5,"TRUE","FALSE")
+table(truth=candy_rankings1$peanutyalmondy, prediction=candy_rankings1$predicted)%>%addmargins
+```
+
+#Accuracy
+(69+3)/85
+#This is the proportion of the dataset that is correctly classified as either having peanuts, peanut butter, or almonds or not.
+
+#TPR
+3/14 
+#This is the proportion of candies that are correctly classified as peanuty/almond. 
+
+#TNR
+69/71 
+#This is the proportion of candies that are correctly classified as not peanuty/almond. 
+
+#PPV
+3/5
+#This is the proportion of candies that are classified as peanuty/almond, that actually are peanuty/almond. 
+```{R}
+#Logit Density Plot
+candy_rankings1$logit<-predict(log_fit)
+
+candy_rankings1 %>% mutate(peanutyalmond=factor(y,levels=c(1,0))) %>% 
+  ggplot(aes(x= logit, fill=peanutyalmond))+
+  geom_density(alpha=.3)+
+  geom_vline(xintercept=0,lty=2)
+
+#ROC CURVE
+library(plotROC)
+ROCplot<-ggplot(candy_rankings1)+geom_roc(aes(d=peanutyalmondy,m=probs), n.cuts=0) 
+ROCplot
+calc_auc(ROCplot)
+```
+#This graph is showing the true positive rate vs. the false positive rate. Our AUC tells us how well we are predicting overall.
+#Our AUC tells that there a 0.80 probability that a randomly selected candy that has peanuts, peanut butter, or almonds has a higher predicted probability than a randomly selected candy that is not peanuty/almond. 
+#With a 0.80 AUC, that means we have a good prediction model!
+
+```{R}
+simp_candy <- candy_rankings1 %>% select(2:13) %>% mutate(y = ifelse(peanutyalmondy == "TRUE", 1, 0))
+simp_candy <- simp_candy %>% select(1:3, 5:13)
+log_fit_all <- glm(y~., data=simp_candy, family="binomial")
+summary(log_fit_all)
+
+simp_candy$probs <- predict(log_fit_all,type="response")
+simp_candy$predicted <- ifelse(simp_candy$probs>.5,"TRUE","FALSE")
+class_diag(simp_candy$predicted,simp_candy$y)
+#This model yields an AUC of 0.79 which yields a fair model.
+
+ROCplot2<-ggplot(simp_candy)+geom_roc(aes(d=y,m=probs), n.cuts=0) 
+calc_auc(ROCplot2)
+#Our AUC of 1 means we have a great prediction model-- perfect model!
+
+#10-Fold CV
+k=10
+data<-simp_candy[sample(nrow(simp_candy)),] 
+folds<-cut(seq(1:nrow(simp_candy)),breaks=k,labels=F) 
+
+diags<-NULL
+for(i in 1:k){
+  train<-data[folds!=i,]
+  test<-data[folds==i,]
+  truth<-test$y
+  
+  fit<-glm(y~., data=simp_candy, family="binomial")
+  probs<-predict(fit,newdata = test,type="response")
+  
+  diags<-rbind(diags,class_diag(probs,truth))
+}
+summarize_all(diags,mean)
+```
+#With 10-Fold CV, we get an AUC of 0.83 which yields this to a pretty good predictor model. 
+#Our in-sample AUC was 0.79 so since the 10-Fold CV yielded a greater AUC, it yields to be a better model. 
+
+```{R}
+#LASSO
+library(glmnet)
+simp_candy <- simp_candy %>% select(1:12)
+y<-as.matrix(simp_candy$y) 
+x<-model.matrix(y~.,data=simp_candy)[,-1]
+x<-scale(x) 
+cv<-cv.glmnet(x,y,family="binomial")
+lasso<-glmnet(x,y,family="binomial",lambda=cv$lambda.1se)
+coef(lasso)
+#Lasso has selected the most important variables to be the fruity variable and the win percent variable.  
+
+#Lasso-10fold CV
+k=10
+data<-simp_candy[sample(nrow(simp_candy)),] 
+folds<-cut(seq(1:nrow(simp_candy)),breaks=k,labels=F) 
+
+diags<-NULL
+for(i in 1:k){
+  train<-data[folds!=i,]
+  test<-data[folds==i,]
+  truth<-test$y
+  
+  fit<-glm(y~fruity+winpercent, data=simp_candy, family="binomial")
+  probs<-predict(fit,newdata = test,type="response")
+  
+  diags<-rbind(diags,class_diag(probs,truth))
+}
+summarize_all(diags,mean)
+```
+
+#This AUC is 0.62 which is lower than the previous logistic regressions, yielding it to be a poor predictor model. 
+

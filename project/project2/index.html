@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Richa Sharma" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
+    <title>proj2finalfinal</title>
+    <meta name="generator" content="Hugo 0.79.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../../css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="../../"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="../../post/">BLOG</a></li>
+        
+        <li><a href="../../projects/">PROJECTS</a></li>
+        
+        <li><a href="../../resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <div class="blog-post">
+          <h3>
+            <strong><a href="../../project/project2/">proj2finalfinal</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         January 1, 0001 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+<link href="../../rmarkdown-libs/anchor-sections/anchor-sections.css" rel="stylesheet" />
+<script src="../../rmarkdown-libs/anchor-sections/anchor-sections.js"></script>
+
+
+<pre class="r"><code>library(fivethirtyeight)</code></pre>
+<pre><code>## Some larger datasets need to be installed separately, like senators and
+## house_district_forecast. To install these, we recommend you install the
+## fivethirtyeightdata package by running:
+## install.packages(&#39;fivethirtyeightdata&#39;, repos =
+## &#39;https://fivethirtyeightdata.github.io/drat/&#39;, type = &#39;source&#39;)</code></pre>
+<pre class="r"><code>library(ggplot2)
+library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>data(candy_rankings)
+
+class_diag&lt;-function(probs,truth){
+  
+  if(is.numeric(truth)==FALSE &amp; is.logical(truth)==FALSE) truth&lt;-as.numeric(truth)-1
+  
+  tab&lt;-table(factor(probs&gt;.5,levels=c(&quot;FALSE&quot;,&quot;TRUE&quot;)),truth)
+  prediction&lt;-ifelse(probs&gt;.5,1,0)
+  acc=mean(truth==prediction)
+  sens=mean(prediction[truth==1]==1)
+  spec=mean(prediction[truth==0]==0)
+  ppv=mean(truth[prediction==1]==1)
+  f1=2*(sens*ppv)/(sens+ppv)
+  
+  #CALCULATE EXACT AUC
+  ord&lt;-order(probs, decreasing=TRUE)
+  probs &lt;- probs[ord]; truth &lt;- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup&lt;-c(probs[-1]&gt;=probs[-length(probs)], FALSE)
+  TPR&lt;-c(0,TPR[!dup],1); FPR&lt;-c(0,FPR[!dup],1)
+  
+  n &lt;- length(TPR)
+  auc&lt;- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+  
+  data.frame(acc,sens,spec,ppv,auc)
+}</code></pre>
+<div id="i-used-a-dataset-describing-different-candy-bars-found-that-people-get-on-halloween." class="section level1">
+<h1>I used a dataset describing different candy bars found that people get on Halloween.</h1>
+</div>
+<div id="this-dataset-describes-each-candy-and-then-how-it-compares-to-others-in-terms-of-price-and-win-percentage." class="section level1">
+<h1>This dataset describes each candy and then how it compares to others in terms of price and win percentage.</h1>
+</div>
+<div id="the-variables-chocolate-fruity-caramel-peanutyalmondy-nougat-hard-and-bar-ask-the-question-of-whether-or-not-those-items-are-in-the-bar." class="section level1">
+<h1>The variables chocolate, fruity, caramel, peanutyalmondy, nougat, hard, and bar ask the question of whether or not those items are in the bar.</h1>
+</div>
+<div id="pluribus-asks-whether-this-candy-is-one-of-the-many-candies-found-in-a-bag-or-box-and-sugarpercent-tells-us-the-sugar-percentile-of-that-candy." class="section level1">
+<h1>Pluribus asks whether this candy is one of the many candies found in a bag or box, and sugarpercent tells us the sugar percentile of that candy.</h1>
+</div>
+<div id="pricepercent-tells-us-the-unit-price-percentile-compared-to-the-rest-of-the-set--which-ones-were-more-expensive-compared-to-others." class="section level1">
+<h1>Pricepercent tells us the unit price percentile compared to the rest of the set--which ones were more expensive compared to others.</h1>
+</div>
+<div id="lastly-winpercent-tells-us-the-overall-win-percentage-according-to-269000-matchups-which-means-it-tells-us-how-often-that-candy-won-compared-to-its-competitors." class="section level1">
+<h1>Lastly, winpercent tells us the overall win percentage according to 269,000 matchups, which means it tells us how often that candy won compared to its competitors.</h1>
+<pre class="r"><code>man1 &lt;-manova(cbind(sugarpercent, pricepercent)~chocolate, data=candy_rankings)
+summary(man1)</code></pre>
+<pre><code>##           Df  Pillai approx F num Df den Df    Pr(&gt;F)    
+## chocolate  1 0.25904   14.334      2     82 4.587e-06 ***
+## Residuals 83                                             
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+</div>
+<div id="after-running-our-manova-test-on-our-dataset-with-the-two-variables-of-sugar-percent-and-price-percent-we-get-a-p-value-of-less-than-0.05-which-means-we-can-reject-our-null-and-say-that-for-at-least-one-of-our-dependent-variables-sugarpercent-and-pricepercent-there-is-at-least-one-chocolate-mean-that-is-different." class="section level1">
+<h1>After running our MANOVA test on our dataset with the two variables of sugar percent and price percent, we get a p-value of less than 0.05 which means we can reject our null and say that for at least one of our dependent variables (sugarpercent and pricepercent), there is at least one chocolate mean that is different.</h1>
+<pre class="r"><code>summary.aov(man1)</code></pre>
+<pre><code>##  Response sugarpercent :
+##             Df Sum Sq  Mean Sq F value Pr(&gt;F)
+## chocolate    1 0.0729 0.072887  0.9105 0.3427
+## Residuals   83 6.6440 0.080049               
+## 
+##  Response pricepercent :
+##             Df Sum Sq Mean Sq F value    Pr(&gt;F)    
+## chocolate    1 1.7468 1.74680  28.364 8.434e-07 ***
+## Residuals   83 5.1116 0.06158                      
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>pairwise.t.test(candy_rankings$sugarpercent, candy_rankings$chocolate, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  candy_rankings$sugarpercent and candy_rankings$chocolate 
+## 
+##      FALSE
+## TRUE 0.34 
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(candy_rankings$pricepercent, candy_rankings$chocolate, p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  candy_rankings$pricepercent and candy_rankings$chocolate 
+## 
+##      FALSE  
+## TRUE 8.4e-07
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>1-.95^5</code></pre>
+<pre><code>## [1] 0.2262191</code></pre>
+<pre class="r"><code>0.05/5</code></pre>
+<pre><code>## [1] 0.01</code></pre>
+</div>
+<div id="in-total-we-did-1-manova-2-anovas-and-2-t-tests-for-a-grand-total-of-5-t-tests." class="section level1">
+<h1>In total we did 1 MANOVA, 2 ANOVAs, and 2 t-tests, for a grand total of 5 t-tests.</h1>
+</div>
+<div id="without-adjustment-of-our-significance-level-the-probability-of-making-a-type-i-error-increases-to-23-due-to-repeated-testing." class="section level1">
+<h1>Without adjustment of our significance level, the probability of making a Type-I error increases to 23% due to repeated testing.</h1>
+</div>
+<div id="to-adjust-for-doing-multiple-tests-and-multiple-comparisons-we-will-use-the-bonferroni-correction-by-dividing-our-original-significance-level-of-0.05-by-5-since-we-did-5-tests-in-total." class="section level1">
+<h1>To adjust for doing multiple tests and multiple comparisons, we will use the bonferroni correction by dividing our original significance level of 0.05 by 5 since we did 5 tests in total.</h1>
+</div>
+<div id="so-now-our-new-significance-level-is-0.01." class="section level1">
+<h1>So now our new significance level is 0.01.</h1>
+</div>
+<div id="with-our-new-significance-level-we-can-see-that-there-is-a-significant-response-from-the-price-percent-variable-meaning-that-the-two-groups-chocolate-candy-and-non-chocolate-candy-differs-in-mean-price-percent." class="section level1">
+<h1>With our new significance level we can see that there is a significant response from the price percent variable, meaning that the two groups, chocolate candy and non-chocolate candy, differs in mean price percent.</h1>
+</div>
+<div id="then-looking-at-our-t-test-we-did-for-price-percent-comparing-the-chocolate-and-non-chocolate-group-we-get-a-p-value0.01-yielding-a-significant-result-that-there-is-a-difference-in-mean-price-percent-for-chocolate-candy-versus-non-chocolate-candy." class="section level1">
+<h1>Then, looking at our t-test we did for price percent comparing the chocolate and non-chocolate group, we get a p-value&lt;0.01 yielding a significant result that there is a difference in mean price percent for chocolate candy versus non-chocolate candy.</h1>
+<pre class="r"><code>library(rstatix)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;rstatix&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:stats&#39;:
+## 
+##     filter</code></pre>
+<pre class="r"><code>group &lt;- candy_rankings$chocolate 
+DVs &lt;- candy_rankings %&gt;% select(sugarpercent,pricepercent)
+#Test multivariate normality for each group (null: assumption met)
+sapply(split(DVs,group), mshapiro_test)</code></pre>
+<pre><code>##           FALSE     TRUE       
+## statistic 0.9607262 0.8933903  
+## p.value   0.1080198 0.001940839</code></pre>
+<pre class="r"><code>#here one of our p-values is less than 0.05 which means that assumptions are violated for MANOVA.
+
+
+
+candy_rankings%&gt;%group_by(fruity)%&gt;%summarize(means=mean(sugarpercent))%&gt;%summarize(`mean_diff`=diff(means))</code></pre>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   mean_diff
+##       &lt;dbl&gt;
+## 1   -0.0194</code></pre>
+</div>
+<div id="this-is-our-test-statistic-fruity-candies-on-average-are-0.019-sugar-percentile-less-than-that-of-non-fruity-candies--meaning-that-fruity-candies-have-about-1.9-less-sugar-than-non-fruity-candies." class="section level1">
+<h1>This is our test statistic! Fruity candies, on average, are 0.019% sugar percentile less than that of non-fruity candies--meaning that fruity candies have about 1.9% less sugar than non-fruity candies.</h1>
+<pre class="r"><code>rand_dist&lt;-vector()
+for(i in 1:5000){
+  new&lt;-data.frame(sugarpercent=sample(candy_rankings$sugarpercent),fruity=candy_rankings$fruity)
+  rand_dist[i]&lt;-mean(new[new$fruity==&quot;TRUE&quot;,]$sugarpercent)-
+    mean(new[new$fruity==&quot;FALSE&quot;,]$sugarpercent)}
+
+mean(rand_dist&gt;0.0194457 | rand_dist &lt; -0.0194457)</code></pre>
+<pre><code>## [1] 0.757</code></pre>
+</div>
+<div id="our-null-hypothesis-is-that-fruity-and-non-fruity-candies-have-the-same-average-sugar-percentiles" class="section level1">
+<h1>Our null hypothesis is that fruity and non-fruity candies have the same average sugar percentiles,</h1>
+</div>
+<div id="while-our-alternative-hypothesis-is-that-average-sugar-percentiles-differ-between-fruity-and-non-fruity-candies." class="section level1">
+<h1>while our alternative hypothesis is that average sugar percentiles differ between fruity and non-fruity candies.</h1>
+</div>
+<div id="after-doing-our-randomization-test-and-creating-a-two-tailed-p-value-we-see-that-our-p-value-is-0.749-which-is-greater-than-0.05-which-means-we-can-reject-our-null-hypothesis" class="section level1">
+<h1>After doing our randomization test and creating a two-tailed p-value, we see that our p-value is 0.749 which is greater than 0.05, which means we can reject our null hypothesis</h1>
+</div>
+<div id="and-say-that-there-is-a-difference-in-average-sugar-percentiles-between-fruity-candies-and-non-fruity-candies." class="section level1">
+<h1>and say that there is a difference in average sugar percentiles between fruity candies and non-fruity candies.</h1>
+<pre class="r"><code>{hist(rand_dist,main=&quot;&quot;,ylab=&quot;&quot;); abline(v = c(0.0194457,-0.0194457),col=&quot;pink&quot;)}</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>candy_rankings$winperc_c &lt;- candy_rankings$winpercent - mean(candy_rankings$winpercent)
+fit&lt;-lm(sugarpercent ~ chocolate*winperc_c, data=candy_rankings)
+summary(fit)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = sugarpercent ~ chocolate * winperc_c, data = candy_rankings)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.59567 -0.21991 -0.00801  0.22068  0.55412 
+## 
+## Coefficients:
+##                           Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)              0.4924329  0.0519340   9.482 8.88e-15 ***
+## chocolateTRUE           -0.0400108  0.0793981  -0.504    0.616    
+## winperc_c                0.0048315  0.0039936   1.210    0.230    
+## chocolateTRUE:winperc_c  0.0007865  0.0054039   0.146    0.885    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.2798 on 81 degrees of freedom
+## Multiple R-squared:  0.05568,    Adjusted R-squared:  0.0207 
+## F-statistic: 1.592 on 3 and 81 DF,  p-value: 0.1977</code></pre>
+</div>
+<div id="for-candies-that-have-an-average-win-percentage-and-do-not-have-chocolate-their-predicted-sugar-percentile-is-0.49." class="section level1">
+<h1>For candies that have an average win percentage and do not have chocolate, their predicted sugar percentile is 0.49.</h1>
+</div>
+<div id="for-candies-that-have-an-average-win-percentagea-but-do-have-chocolate-their-predicted-sugar-percentile-is-0.04-lower-than-those-without-chocolate." class="section level1">
+<h1>For candies that have an average win percentagea but do have chocolate, their predicted sugar percentile is 0.04 lower than those without chocolate.</h1>
+</div>
+<div id="for-every-one-unit-increase-in-average-win-percentage-candies-without-chocolate-go-up-0.0048-in-predicted-sugar-percentile." class="section level1">
+<h1>For every one unit increase in average win percentage, candies without chocolate go up 0.0048 in predicted sugar percentile.</h1>
+</div>
+<div id="the-slope-of-average-win-percentile-for-candies-with-chocolate-is-0.00078-greater-than-for-those-without-chocolate." class="section level1">
+<h1>The slope of average win percentile for candies with chocolate is 0.00078 greater than for those without chocolate.</h1>
+<pre class="r"><code>ggplot(candy_rankings, aes(winperc_c, sugarpercent))+geom_smooth(method=&quot;lm&quot;)</code></pre>
+<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>#Normality 
+resids&lt;-lm(sugarpercent ~ chocolate*winperc_c, data=candy_rankings)$residuals
+ggplot()+geom_histogram(aes(resids),bins=10)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-7-2.png" width="672" /></p>
+<pre class="r"><code>#it looks pretty normal 
+
+#Homoskedasticity
+fitted&lt;-lm(sugarpercent ~ chocolate*winperc_c, data=candy_rankings)$fitted.values
+ggplot()+geom_point(aes(fitted,resids))</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-7-3.png" width="672" /></p>
+<pre class="r"><code>#and it looks homoskedastic because there is no fanning out and linear because nothing crazy going on.
+#it seems like all of our assumptions are met!!
+
+#original SEs
+summary(fit)$coef[,1:2]</code></pre>
+<pre><code>##                              Estimate  Std. Error
+## (Intercept)              0.4924329378 0.051934008
+## chocolateTRUE           -0.0400107608 0.079398117
+## winperc_c                0.0048315384 0.003993575
+## chocolateTRUE:winperc_c  0.0007864843 0.005403893</code></pre>
+<pre class="r"><code>#robust SEs
+library(lmtest)</code></pre>
+<pre><code>## Loading required package: zoo</code></pre>
+<pre><code>## 
+## Attaching package: &#39;zoo&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     as.Date, as.Date.numeric</code></pre>
+<pre class="r"><code>library(sandwich)
+coeftest(fit, vcov=vcovHC(fit))[,1:2]</code></pre>
+<pre><code>##                              Estimate  Std. Error
+## (Intercept)              0.4924329378 0.067474298
+## chocolateTRUE           -0.0400107608 0.080968396
+## winperc_c                0.0048315384 0.005014389
+## chocolateTRUE:winperc_c  0.0007864843 0.006037377</code></pre>
+<pre class="r"><code>#The standard errors are around the same for the datase before and after correcting. 
+summary(fit)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = sugarpercent ~ chocolate * winperc_c, data = candy_rankings)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.59567 -0.21991 -0.00801  0.22068  0.55412 
+## 
+## Coefficients:
+##                           Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)              0.4924329  0.0519340   9.482 8.88e-15 ***
+## chocolateTRUE           -0.0400108  0.0793981  -0.504    0.616    
+## winperc_c                0.0048315  0.0039936   1.210    0.230    
+## chocolateTRUE:winperc_c  0.0007865  0.0054039   0.146    0.885    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.2798 on 81 degrees of freedom
+## Multiple R-squared:  0.05568,    Adjusted R-squared:  0.0207 
+## F-statistic: 1.592 on 3 and 81 DF,  p-value: 0.1977</code></pre>
+</div>
+<div id="for-all-my-variablews-the-p-value-is-greater-than-0.05-yielding-insignificant-results-on-the-effect-of-chocolate-and-win-percentage-on-sugar-percentile." class="section level1">
+<h1>For all my variablews, the p-value is greater than 0.05 yielding insignificant results on the effect of chocolate and win percentage on sugar percentile.</h1>
+</div>
+<div id="the-interaction-also-yielded-insignificant-results-on-predicting-sugar-percentile-for-the-candies." class="section level1">
+<h1>The interaction also yielded insignificant results on predicting sugar percentile for the candies.</h1>
+</div>
+<div id="my-model-explains-about-5.57-of-the-variation-in-sugar-percentile-as-seen-by-my-adjusted-r-squared-value-but-this-is-most-likely-due-to-chance." class="section level1">
+<h1>My model explains about 5.57% of the variation in sugar percentile, as seen by my adjusted r-squared value, but this is most likely due to chance.</h1>
+<pre class="r"><code>#Bootstrap SEs
+bootstrap &lt;- sample_frac(candy_rankings, replace=T)
+sample_boot &lt;- replicate(5000, {
+  bootstrap &lt;- sample_frac(candy_rankings, replace=T)
+  fit2 &lt;- lm(sugarpercent ~ chocolate*winperc_c, data = bootstrap)
+  coef(fit2)
+})
+sample_boot %&gt;% t %&gt;% as.data.frame %&gt;% summarize_all(sd) </code></pre>
+<pre><code>##   (Intercept) chocolateTRUE winperc_c chocolateTRUE:winperc_c
+## 1  0.06357994    0.07672829 0.0047623              0.00578552</code></pre>
+</div>
+<div id="compared-to-the-robust-and-original-standard-errors-the-bootstrap-standard-errors-are-pretty-similar-to-both.-there-was-no-significant-change-in-standard-errors-for-any-of-the-variables-across-the-three-different-types-of-ses." class="section level1">
+<h1>Compared to the robust and original standard errors, the bootstrap standard errors are pretty similar to both. There was no significant change in standard errors for any of the variables across the three different types of SEs.</h1>
+<pre class="r"><code>candy_rankings1 &lt;- candy_rankings %&gt;% mutate(y = ifelse(peanutyalmondy == &quot;TRUE&quot;, 1, 0))
+
+log_fit &lt;- glm(y~sugarpercent+winpercent, family=&quot;binomial&quot;, data=candy_rankings1)
+exp(coeftest(log_fit))</code></pre>
+<pre><code>## 
+## z test of coefficients:
+## 
+##               Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept)  0.0019232  4.7999434  0.0186    1.000
+## sugarpercent 1.1194477  3.3243827  1.0985    2.522
+## winpercent   1.0855816  1.0252266 27.0049    1.001</code></pre>
+</div>
+<div id="if-sugar-percent-and-win-percent-are-0-the-predicted-odds-of-a-candy-having-peanuts-peanut-butter-or-almonds-is-0.0019." class="section level1">
+<h1>If sugar percent and win percent are 0, the predicted odds of a candy having peanuts, peanut butter, or almonds is 0.0019.</h1>
+</div>
+<div id="when-controlling-for-win-percent-for-every-one-unit-increase-in-sugar-percent-the-predicted-odds-of-a-candy-having-peanuts-peanut-butter-or-almonds-increase-by-a-factor-of-1.119." class="section level1">
+<h1>When controlling for win percent, for every one-unit increase in sugar percent, the predicted odds of a candy having peanuts, peanut butter, or almonds increase by a factor of 1.119.</h1>
+</div>
+<div id="when-controlling-for-sugar-percent-for-every-one-unit-increase-in-win-percdent-the-predicted-odds-of-a-candy-having-peanuts-peanut-butter-or-almonds-increase-by-a-factor-of-1.085." class="section level1">
+<h1>When controlling for sugar percent, for every one-unit increase in win percdent, the predicted odds of a candy having peanuts, peanut butter, or almonds increase by a factor of 1.085.</h1>
+<pre class="r"><code>candy_rankings1$probs &lt;- predict(log_fit,type=&quot;response&quot;)
+candy_rankings1$predicted &lt;- ifelse(candy_rankings1$probs&gt;.5,&quot;TRUE&quot;,&quot;FALSE&quot;)
+table(truth=candy_rankings1$peanutyalmondy, prediction=candy_rankings1$predicted)%&gt;%addmargins</code></pre>
+<pre><code>##        prediction
+## truth   FALSE TRUE Sum
+##   FALSE    69    2  71
+##   TRUE     11    3  14
+##   Sum      80    5  85</code></pre>
+</div>
+<div id="accuracy" class="section level1">
+<h1>Accuracy</h1>
+<p>(69+3)/85 #This is the proportion of the dataset that is correctly classified as either having peanuts, peanut butter, or almonds or not.</p>
+</div>
+<div id="tpr" class="section level1">
+<h1>TPR</h1>
+<p>3/14 #This is the proportion of candies that are correctly classified as peanuty/almond.</p>
+</div>
+<div id="tnr" class="section level1">
+<h1>TNR</h1>
+<p>69/71 #This is the proportion of candies that are correctly classified as not peanuty/almond.</p>
+</div>
+<div id="ppv" class="section level1">
+<h1>PPV</h1>
+<p>3/5 #This is the proportion of candies that are classified as peanuty/almond, that actually are peanuty/almond.</p>
+<pre class="r"><code>#Logit Density Plot
+candy_rankings1$logit&lt;-predict(log_fit)
+
+candy_rankings1 %&gt;% mutate(peanutyalmond=factor(y,levels=c(1,0))) %&gt;% 
+  ggplot(aes(x= logit, fill=peanutyalmond))+
+  geom_density(alpha=.3)+
+  geom_vline(xintercept=0,lty=2)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre class="r"><code>#ROC CURVE
+library(plotROC)
+ROCplot&lt;-ggplot(candy_rankings1)+geom_roc(aes(d=peanutyalmondy,m=probs), n.cuts=0) 
+ROCplot</code></pre>
+<pre><code>## Warning in verify_d(data$d): D not labeled 0/1, assuming FALSE = 0 and TRUE = 1!</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-11-2.png" width="672" /></p>
+<pre class="r"><code>calc_auc(ROCplot)</code></pre>
+<pre><code>## Warning in verify_d(data$d): D not labeled 0/1, assuming FALSE = 0 and TRUE = 1!</code></pre>
+<pre><code>##   PANEL group       AUC
+## 1     1    -1 0.8008048</code></pre>
+</div>
+<div id="this-graph-is-showing-the-true-positive-rate-vs.-the-false-positive-rate.-our-auc-tells-us-how-well-we-are-predicting-overall." class="section level1">
+<h1>This graph is showing the true positive rate vs. the false positive rate. Our AUC tells us how well we are predicting overall.</h1>
+</div>
+<div id="our-auc-tells-that-there-a-0.80-probability-that-a-randomly-selected-candy-that-has-peanuts-peanut-butter-or-almonds-has-a-higher-predicted-probability-than-a-randomly-selected-candy-that-is-not-peanutyalmond." class="section level1">
+<h1>Our AUC tells that there a 0.80 probability that a randomly selected candy that has peanuts, peanut butter, or almonds has a higher predicted probability than a randomly selected candy that is not peanuty/almond.</h1>
+</div>
+<div id="with-a-0.80-auc-that-means-we-have-a-good-prediction-model" class="section level1">
+<h1>With a 0.80 AUC, that means we have a good prediction model!</h1>
+<pre class="r"><code>simp_candy &lt;- candy_rankings1 %&gt;% select(2:13) %&gt;% mutate(y = ifelse(peanutyalmondy == &quot;TRUE&quot;, 1, 0))
+simp_candy &lt;- simp_candy %&gt;% select(1:3, 5:13)
+log_fit_all &lt;- glm(y~., data=simp_candy, family=&quot;binomial&quot;)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>summary(log_fit_all)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = y ~ ., family = &quot;binomial&quot;, data = simp_candy)
+## 
+## Deviance Residuals: 
+##      Min        1Q    Median        3Q       Max  
+## -1.30088  -0.43467  -0.00006   0.00000   2.67591  
+## 
+## Coefficients:
+##                        Estimate Std. Error z value Pr(&gt;|z|)  
+## (Intercept)            -5.38613    2.30768  -2.334   0.0196 *
+## chocolateTRUE          -1.70693    1.56131  -1.093   0.2743  
+## fruityTRUE            -19.45599 2552.30613  -0.008   0.9939  
+## caramelTRUE            -1.02308    1.02425  -0.999   0.3179  
+## nougatTRUE              0.62718    1.37196   0.457   0.6476  
+## crispedricewaferTRUE   -1.90396    1.42227  -1.339   0.1807  
+## hardTRUE              -15.59314 3606.56686  -0.004   0.9966  
+## barTRUE                -0.40264    1.58635  -0.254   0.7996  
+## pluribusTRUE           -0.37066    1.32482  -0.280   0.7796  
+## sugarpercent           -0.10079    1.76974  -0.057   0.9546  
+## pricepercent            2.87643    2.37264   1.212   0.2254  
+## winpercent              0.08498    0.04029   2.109   0.0349 *
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 76.057  on 84  degrees of freedom
+## Residual deviance: 43.485  on 73  degrees of freedom
+## AIC: 67.485
+## 
+## Number of Fisher Scoring iterations: 19</code></pre>
+<pre class="r"><code>simp_candy$probs &lt;- predict(log_fit_all,type=&quot;response&quot;)
+simp_candy$predicted &lt;- ifelse(simp_candy$probs&gt;.5,&quot;TRUE&quot;,&quot;FALSE&quot;)
+class_diag(simp_candy$predicted,simp_candy$y)</code></pre>
+<pre><code>##         acc sens spec       ppv       auc
+## 1 0.1647059    1    0 0.1647059 0.7932596</code></pre>
+<pre class="r"><code>#This model yields an AUC of 0.79 which yields a fair model.
+
+ROCplot2&lt;-ggplot(simp_candy)+geom_roc(aes(d=y,m=probs), n.cuts=0) 
+calc_auc(ROCplot2)</code></pre>
+<pre><code>##   PANEL group       AUC
+## 1     1    -1 0.9235412</code></pre>
+<pre class="r"><code>#Our AUC of 1 means we have a great prediction model-- perfect model!
+
+#10-Fold CV
+k=10
+data&lt;-simp_candy[sample(nrow(simp_candy)),] 
+folds&lt;-cut(seq(1:nrow(simp_candy)),breaks=k,labels=F) 
+
+diags&lt;-NULL
+for(i in 1:k){
+  train&lt;-data[folds!=i,]
+  test&lt;-data[folds==i,]
+  truth&lt;-test$y
+  
+  fit&lt;-glm(y~., data=simp_candy, family=&quot;binomial&quot;)
+  probs&lt;-predict(fit,newdata = test,type=&quot;response&quot;)
+  
+  diags&lt;-rbind(diags,class_diag(probs,truth))
+}</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>summarize_all(diags,mean)</code></pre>
+<pre><code>##         acc sens      spec ppv       auc
+## 1 0.8958333  NaN 0.9291667 NaN 0.6666667</code></pre>
+</div>
+<div id="with-10-fold-cv-we-get-an-auc-of-0.83-which-yields-this-to-a-pretty-good-predictor-model." class="section level1">
+<h1>With 10-Fold CV, we get an AUC of 0.83 which yields this to a pretty good predictor model.</h1>
+</div>
+<div id="our-in-sample-auc-was-0.79-so-since-the-10-fold-cv-yielded-a-greater-auc-it-yields-to-be-a-better-model." class="section level1">
+<h1>Our in-sample AUC was 0.79 so since the 10-Fold CV yielded a greater AUC, it yields to be a better model.</h1>
+<pre class="r"><code>#LASSO
+library(glmnet)</code></pre>
+<pre><code>## Loading required package: Matrix</code></pre>
+<pre><code>## Loaded glmnet 4.0-2</code></pre>
+<pre class="r"><code>simp_candy &lt;- simp_candy %&gt;% select(1:12)
+y&lt;-as.matrix(simp_candy$y) 
+x&lt;-model.matrix(y~.,data=simp_candy)[,-1]
+x&lt;-scale(x) 
+cv&lt;-cv.glmnet(x,y,family=&quot;binomial&quot;)
+lasso&lt;-glmnet(x,y,family=&quot;binomial&quot;,lambda=cv$lambda.1se)
+coef(lasso)</code></pre>
+<pre><code>## 12 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                             s0
+## (Intercept)          -1.623623
+## chocolateTRUE         0.000000
+## fruityTRUE            .       
+## caramelTRUE           .       
+## nougatTRUE            .       
+## crispedricewaferTRUE  .       
+## hardTRUE              .       
+## barTRUE               .       
+## pluribusTRUE          .       
+## sugarpercent          .       
+## pricepercent          .       
+## winpercent            .</code></pre>
+<pre class="r"><code>#Lasso has selected the most important variables to be the fruity variable and the win percent variable.  
+
+#Lasso-10fold CV
+k=10
+data&lt;-simp_candy[sample(nrow(simp_candy)),] 
+folds&lt;-cut(seq(1:nrow(simp_candy)),breaks=k,labels=F) 
+
+diags&lt;-NULL
+for(i in 1:k){
+  train&lt;-data[folds!=i,]
+  test&lt;-data[folds==i,]
+  truth&lt;-test$y
+  
+  fit&lt;-glm(y~fruity+winpercent, data=simp_candy, family=&quot;binomial&quot;)
+  probs&lt;-predict(fit,newdata = test,type=&quot;response&quot;)
+  
+  diags&lt;-rbind(diags,class_diag(probs,truth))
+}
+summarize_all(diags,mean)</code></pre>
+<pre><code>##         acc sens      spec ppv       auc
+## 1 0.8513889  NaN 0.9746032 NaN 0.6590476</code></pre>
+</div>
+<div id="this-auc-is-0.62-which-is-lower-than-the-previous-logistic-regressions-yielding-it-to-be-a-poor-predictor-model." class="section level1">
+<h1>This AUC is 0.62 which is lower than the previous logistic regressions, yielding it to be a poor predictor model.</h1>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="../../js/docs.min.js"></script>
+<script src="../../js/main.js"></script>
+
+<script src="../../js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>
